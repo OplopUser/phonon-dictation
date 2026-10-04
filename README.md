@@ -14,15 +14,15 @@ git clone <this repo> && cd phonon-dictation
 /opt/homebrew/bin/python3.13 -m venv .venv        # tested with Homebrew Python 3.13
 .venv/bin/pip install fermion-research mlx mlx-audio mlx-lm soundfile scipy zstandard
 xcode-select --install                            # if you don't have Apple's command line tools
+scripts/create-signing-identity.sh                # local signing certificate, so permissions survive rebuilds
 ./build.sh                                        # builds and installs ~/Applications/Phonon Dictation.app
 open ~/Applications/"Phonon Dictation.app"        # first launch downloads the model (164 MB)
 ```
 
-On first launch, allow **Microphone** and **Accessibility** (System Settings → Privacy & Security).
-If one is missing, the 🎤 key beeps and the menu-bar menu says which permission to turn on.
-Then turn on **Start at Login** in the menu-bar menu.
+The app needs **Microphone** and **Accessibility** access (Accessibility lets it paste). If either is missing when you press 🎤, the app asks for it then and there: it shows the macOS prompt or opens the right page in System Settings. Then hold 🎤 again.
+Turn on **Start at Login** in the menu-bar menu.
 
-The app is signed locally (no Apple developer certificate), so after each rebuild macOS asks for the permissions again. Remove the old "Phonon Dictation" entry under Accessibility and allow the new one.
+`scripts/create-signing-identity.sh` makes a self-signed certificate in your login keychain, and `build.sh` signs with it. macOS ties permissions to the app's signature. With the certificate the signature stays the same across rebuilds, so you only grant permissions once. Without it, the app is signed ad hoc, and every rebuild looks like a new app that needs the permissions again.
 
 ## How it works
 

@@ -32,9 +32,25 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-codesign --force --sign - "$APP"
+# Sign with the local certificate (see scripts/create-signing-identity.sh) so
+# macOS keeps the Microphone and Accessibility permissions across rebuilds.
+IDENTITY="Phonon Dictation Local Signing"
+if security find-identity -p codesigning | grep -q "\"$IDENTITY\""; then
+  codesign --force --sign "$IDENTITY" "$APP"
+else
+  echo "No \"$IDENTITY\" certificate: signing ad hoc, so macOS will ask for permissions again after every rebuild."
+  codesign --force --sign - "$APP"
+fi
 
+# Replace the installed app, restarting it if it is running.
+running=false
+if pgrep -xq PhononDictation; then
+  running=true
+  osascript -e 'quit app "Phonon Dictation"'
+  while pgrep -xq PhononDictation; do sleep 0.2; done
+fi
 mkdir -p ~/Applications
 rm -rf ~/Applications/"Phonon Dictation.app"
 cp -R "$APP" ~/Applications/
 echo "Installed ~/Applications/Phonon Dictation.app"
+if $running; then open ~/Applications/"Phonon Dictation.app"; fi

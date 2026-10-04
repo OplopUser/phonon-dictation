@@ -57,15 +57,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSSound.beep()
             return
         }
-        // Without these, recording or pasting would fail silently.
-        if AVCaptureDevice.authorizationStatus(for: .audio) != .authorized {
-            setStatus("Allow Microphone in Privacy & Security")
-            NSSound.beep()
+        // Without these, recording or pasting would fail silently, so ask for
+        // them right when you press the key, where you'll see the prompt.
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized:
+            break
+        case .notDetermined:
+            setStatus("Allow the microphone, then hold 🎤 again")
+            AVCaptureDevice.requestAccess(for: .audio) { _ in }
+            return
+        default:
+            setStatus("Turn on Phonon Dictation under Microphone")
+            openPrivacySettings("Privacy_Microphone")
             return
         }
         if !AXIsProcessTrusted() {
-            setStatus("Allow Accessibility in Privacy & Security")
-            NSSound.beep()
+            setStatus("Turn on Phonon Dictation under Accessibility")
+            Paster.ensureAccessibility()  // adds the app to the list and shows the system prompt
+            openPrivacySettings("Privacy_Accessibility")
             return
         }
         setStatus("Ready: hold 🎤 to dictate")
@@ -102,6 +111,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             image?.isTemplate = true
             statusItem.button?.image = image
         }
+    }
+
+    private func openPrivacySettings(_ pane: String) {
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)")!)
     }
 
     private func setStatus(_ text: String) {
