@@ -1,6 +1,7 @@
 import AVFoundation
 
 /// Records the microphone as 16 kHz mono and hands each block of samples to `onSamples`.
+/// The first `muteSeconds` come through as silence, so the mic doesn't pick up the start sound.
 final class Recorder {
     static let sampleRate = 16_000.0
 
@@ -8,8 +9,10 @@ final class Recorder {
     private let targetFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 1, interleaved: false)!
     private var converter: AVAudioConverter?
     private let onSamples: ([Float]) -> Void
+    private var samplesToMute: Int
 
-    init(onSamples: @escaping ([Float]) -> Void) {
+    init(muteSeconds: Double = 0, onSamples: @escaping ([Float]) -> Void) {
+        self.samplesToMute = Int(muteSeconds * Self.sampleRate)
         self.onSamples = onSamples
     }
 
@@ -23,7 +26,13 @@ final class Recorder {
         self.converter = converter
         input.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, _ in
             guard let self else { return }
-            self.onSamples(self.convert(buffer))
+            var samples = self.convert(buffer)
+            if self.samplesToMute > 0 {
+                let count = min(self.samplesToMute, samples.count)
+                samples.replaceSubrange(0..<count, with: repeatElement(0, count: count))
+                self.samplesToMute -= count
+            }
+            self.onSamples(samples)
         }
         engine.prepare()
         try engine.start()

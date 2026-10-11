@@ -26,12 +26,48 @@ enum KeyMode: String {
     }
 }
 
+/// Short system sounds when recording starts and stops. Chosen in the menu and remembered.
+enum Cues {
+    // Tink is audible for only 0.04 s; the mic is muted for longer than that
+    // (plus speaker delay), because Phonon turns a lone "tink" into "Right."
+    static let startMuteSeconds = 0.2
+    private static let defaultsKey = "PlaySounds"
+    private static let start = sound("Tink")
+    private static let stop = sound("Pop")
+
+    static var enabled: Bool {
+        get { UserDefaults.standard.object(forKey: defaultsKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: defaultsKey) }
+    }
+
+    /// Plays the start sound if sounds are on; returns how long to keep the mic muted.
+    static func playStart() -> Double {
+        guard enabled, let start else { return 0 }
+        start.stop()
+        start.play()
+        return startMuteSeconds
+    }
+
+    static func playStop() {
+        guard enabled, let stop else { return }
+        stop.stop()
+        stop.play()
+    }
+
+    private static func sound(_ name: String) -> NSSound? {
+        let sound = NSSound(named: name)
+        sound?.volume = 0.4
+        return sound
+    }
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let statusLine = NSMenuItem(title: "Starting…", action: nil, keyEquivalent: "")
     private let loginItem = NSMenuItem(title: "Start at Login", action: #selector(toggleLogin), keyEquivalent: "")
     private let holdItem = NSMenuItem(title: "Hold 🎤 to Talk", action: #selector(chooseHold), keyEquivalent: "")
     private let toggleItem = NSMenuItem(title: "Press 🎤 to Start, Press Again to Stop", action: #selector(chooseToggle), keyEquivalent: "")
+    private let soundsItem = NSMenuItem(title: "Play Start and Stop Sounds", action: #selector(toggleSounds), keyEquivalent: "")
 
     private let server = PhononServer()
     private let hotKey = HotKey()
@@ -53,6 +89,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(holdItem)
         menu.addItem(toggleItem)
         menu.addItem(.separator())
+        soundsItem.target = self
+        soundsItem.state = Cues.enabled ? .on : .off
+        menu.addItem(soundsItem)
         loginItem.target = self
         menu.addItem(loginItem)
         menu.addItem(NSMenuItem(title: "Quit Phonon Dictation", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
@@ -133,7 +172,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         setStatus(mode.readyText)
         let streamer = Streamer(endpoint: server.endpoint)
-        let recorder = Recorder { samples in streamer.append(samples) }
+        let muteSeconds = Cues.playStart()
+        let recorder = Recorder(muteSeconds: muteSeconds) { samples in streamer.append(samples) }
         do {
             try recorder.start()
         } catch {
@@ -152,6 +192,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func stopDictation() {
         guard let recorder else { return }
         recorder.stop()
+        Cues.playStop()  // after the mic is off, so it isn't recorded
         streamer?.finish()  // pastes whatever was said since the last paste
         self.recorder = nil
         self.streamer = nil
@@ -177,6 +218,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setStatus(_ text: String) {
         DispatchQueue.main.async { self.statusLine.title = text }
+    }
+
+    @objc private func toggleSounds() {
+        Cues.enabled.toggle()
+        soundsItem.state = Cues.enabled ? .on : .off
     }
 
     @objc private func chooseHold() {
