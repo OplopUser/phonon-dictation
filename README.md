@@ -3,7 +3,7 @@
 Hold the 🎤 key on your Mac, talk, and your words are typed into whatever app you're in.
 Speech recognition runs locally with [Phonon-2](https://github.com/fermionresearch/phonon) (164 MB, English). No audio leaves the Mac, and nothing is logged or saved.
 
-- **Hold to talk.** Text appears about every 5 seconds while you hold the key, and the rest is pasted when you let go.
+- **Hold to talk, or press to start and press again to stop.** Pick the mode in the menu-bar menu; the app remembers it. Text appears about every 5 seconds while recording, and the rest is pasted when you stop.
 - **No third-party tools.** A small Swift menu-bar app, plus macOS's own `hidutil` and Login Items.
 - Needs Apple silicon and macOS 14 or later.
 
@@ -19,7 +19,7 @@ scripts/create-signing-identity.sh                # local signing certificate, s
 open ~/Applications/"Phonon Dictation.app"        # first launch downloads the model (164 MB)
 ```
 
-The app needs **Microphone** and **Accessibility** access (Accessibility lets it paste). If either is missing when you press 🎤, the app asks for it then and there: it shows the macOS prompt or opens the right page in System Settings. Then hold 🎤 again.
+The app needs **Microphone** and **Accessibility** access (Accessibility lets it paste). If either is missing when you press 🎤, the app asks for it then and there: it shows the macOS prompt or opens the right page in System Settings. Then press 🎤 again.
 Turn on **Start at Login** in the menu-bar menu.
 
 `scripts/create-signing-identity.sh` makes a self-signed certificate in your login keychain, and `build.sh` signs with it. macOS ties permissions to the app's signature. With the certificate the signature stays the same across rebuilds, so you only grant permissions once. Without it, the app is signed ad hoc, and every rebuild looks like a new app that needs the permissions again.
@@ -28,7 +28,7 @@ Turn on **Start at Login** in the menu-bar menu.
 
 | Piece | File |
 |---|---|
-| Menu-bar app; starts and stops everything | `Sources/main.swift` |
+| Menu-bar app: menu, hold or press-to-start/stop mode, permissions; starts and stops everything | `Sources/main.swift` |
 | Remaps 🎤 → F19 with `hidutil` and listens for F19 press and release | `Sources/HotKey.swift` |
 | Microphone → 16 kHz mono | `Sources/Recorder.swift` |
 | Decides which words are final and when to paste them | `Sources/Streamer.swift` |

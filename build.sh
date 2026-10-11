@@ -36,7 +36,10 @@ PLIST
 # macOS keeps the Microphone and Accessibility permissions across rebuilds.
 IDENTITY="Phonon Dictation Local Signing"
 if security find-identity -p codesigning | grep -q "\"$IDENTITY\""; then
-  codesign --force --sign "$IDENTITY" "$APP"
+  codesign --force --sign "$IDENTITY" "$APP" || {
+    echo "Signing failed. If the error is errSecInternalComponent, your login keychain is probably locked: unlock it (open Keychain Access) and run ./build.sh again."
+    exit 1
+  }
 else
   echo "No \"$IDENTITY\" certificate: signing ad hoc, so macOS will ask for permissions again after every rebuild."
   codesign --force --sign - "$APP"
