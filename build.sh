@@ -8,7 +8,11 @@ PHONON="$PWD/.venv/bin/phonon"
 [[ -x "$PHONON" ]] || { echo "Phonon is not installed in .venv; see README.md"; exit 1; }
 
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+
+# Spoken cues for when recording starts and stops, in the Mac's default voice.
+say -r 240 -o "$APP/Contents/Resources/start.aiff" "Start"
+say -r 240 -o "$APP/Contents/Resources/stop.aiff" "Stop"
 
 swiftc -O -swift-version 5 -target arm64-apple-macos14.0 \
   Sources/*.swift -o "$APP/Contents/MacOS/PhononDictation"

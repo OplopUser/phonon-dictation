@@ -26,26 +26,27 @@ enum KeyMode: String {
     }
 }
 
-/// Short system sounds when recording starts and stops. Chosen in the menu and remembered.
+/// A voice saying "Start" and "Stop" when recording starts and stops (made with
+/// `say` by build.sh). Turned on or off in the menu, and remembered.
 enum Cues {
-    // Tink is audible for only 0.04 s; the mic is muted for longer than that
-    // (plus speaker delay), because Phonon turns a lone "tink" into "Right."
-    static let startMuteSeconds = 0.2
     private static let defaultsKey = "PlaySounds"
-    private static let start = sound("Tink")
-    private static let stop = sound("Pop")
+    private static let start = sound("start")
+    private static let stop = sound("stop")
 
     static var enabled: Bool {
         get { UserDefaults.standard.object(forKey: defaultsKey) as? Bool ?? true }
         set { UserDefaults.standard.set(newValue, forKey: defaultsKey) }
     }
 
-    /// Plays the start sound if sounds are on; returns how long to keep the mic muted.
+    /// Says "Start" if sounds are on; returns how long to keep the mic muted.
+    /// The mic would otherwise hear the word and Phonon would type "Start.",
+    /// so it stays muted until the word ends, plus 0.2 s for speaker delay.
     static func playStart() -> Double {
         guard enabled, let start else { return 0 }
+        stop?.stop()  // a "Stop" still playing from a quick re-press would be heard too
         start.stop()
         start.play()
-        return startMuteSeconds
+        return start.duration + 0.2
     }
 
     static func playStop() {
@@ -55,8 +56,9 @@ enum Cues {
     }
 
     private static func sound(_ name: String) -> NSSound? {
-        let sound = NSSound(named: name)
-        sound?.volume = 0.4
+        guard let url = Bundle.main.url(forResource: name, withExtension: "aiff") else { return nil }
+        let sound = NSSound(contentsOf: url, byReference: true)
+        sound?.volume = 0.6
         return sound
     }
 }
@@ -67,7 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let loginItem = NSMenuItem(title: "Start at Login", action: #selector(toggleLogin), keyEquivalent: "")
     private let holdItem = NSMenuItem(title: "Hold 🎤 to Talk", action: #selector(chooseHold), keyEquivalent: "")
     private let toggleItem = NSMenuItem(title: "Press 🎤 to Start, Press Again to Stop", action: #selector(chooseToggle), keyEquivalent: "")
-    private let soundsItem = NSMenuItem(title: "Play Start and Stop Sounds", action: #selector(toggleSounds), keyEquivalent: "")
+    private let soundsItem = NSMenuItem(title: "Say \u{201C}Start\u{201D} and \u{201C}Stop\u{201D}", action: #selector(toggleSounds), keyEquivalent: "")
 
     private let server = PhononServer()
     private let hotKey = HotKey()

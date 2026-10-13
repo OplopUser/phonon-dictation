@@ -4,7 +4,7 @@ Hold the 🎤 key on your Mac, talk, and your words are typed into whatever app 
 Speech recognition runs locally with [Phonon-2](https://github.com/fermionresearch/phonon) (164 MB, English). No audio leaves the Mac, and nothing is logged or saved.
 
 - **Hold to talk, or press to start and press again to stop.** Pick the mode in the menu-bar menu; the app remembers it. Text appears about every 5 seconds while recording, and the rest is pasted when you stop.
-- **Start and stop sounds** (Tink and Pop) so you know when it's listening. You can turn them off in the menu.
+- **Spoken cues:** it says "Start" when it begins listening and "Stop" when it stops. You can turn them off in the menu.
 - **No third-party tools.** A small Swift menu-bar app, plus macOS's own `hidutil` and Login Items.
 - Needs Apple silicon and macOS 14 or later.
 
@@ -42,7 +42,7 @@ Turn on **Start at Login** in the menu-bar menu.
 
 Each pass transcribes from where you started talking, or from your last pause of at least 0.3 s. It never starts in the middle of speech, because Phonon-2 often skips a whole sentence when a clip does that (about 1 in 5 clips in testing). Audio from before a pause is dropped once a dictation passes 20 seconds, so each pass stays fast.
 
-**Sounds.** The mic hears the start sound, and Phonon turns a lone "tink" into a word like "Right.", so the first 0.2 s of each recording is muted. The stop sound plays after the mic is off.
+**Spoken cues.** `build.sh` generates "Start" and "Stop" with macOS `say`. The mic would hear "Start" and Phonon would type it, so each recording stays muted until the word ends, plus 0.2 s for speaker delay (about 0.55 s in total). "Stop" plays after the mic is off.
 
 **Cleanup.** Half a second of silence goes after each clip, because without it Phonon tends to invent a final "but" or "and". Words heard in near-silence are dropped, because the model sometimes invents an "Okay." there.
 
