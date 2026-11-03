@@ -142,7 +142,7 @@ This generates speech with macOS `say`: normal and fast speech, a meeting-style 
 ## Limitations
 
 - **Personal project, built locally.** There are no prebuilt releases; you build it from source with the steps above.
-- **Tied to the clone.** The app runs `phonon` from this repository's `.venv` by absolute path, so moving or deleting the clone (or the `.venv`) breaks it until you rebuild.
+- **Tied to the Phonon install.** The app runs `phonon` by the absolute path baked in at build time (this repository's `.venv` by default, or `PHONON=/path/to/phonon ./build.sh`), so moving or deleting it breaks the app until you rebuild.
 - **Apple silicon and English only**, following the target and the Phonon-2 model.
 - **Fixed port.** The app uses port 8010 and reuses whatever answers there with HTTP 200 on `/v1/models`.
 - **Remap after a crash.** If the app exits without quitting normally, the 🎤 → F19 remap stays until you log out or relaunch and quit the app.

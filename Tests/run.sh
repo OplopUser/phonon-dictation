@@ -9,7 +9,13 @@ trap 'rm -rf "$work"; [[ -n "${server:-}" ]] && kill $server' EXIT
 if ! curl -sf -o /dev/null http://127.0.0.1:8010/v1/models; then
   .venv/bin/phonon serve --port 8010 >/dev/null 2>&1 &
   server=$!
-  until curl -sf -o /dev/null http://127.0.0.1:8010/v1/models; do sleep 1; done
+  # Same 3-minute limit the app uses; give up early if the server exits.
+  for i in {1..180}; do
+    curl -sf -o /dev/null http://127.0.0.1:8010/v1/models && break
+    kill -0 $server 2>/dev/null || { echo "phonon serve exited during startup"; exit 1; }
+    (( i == 180 )) && { echo "phonon serve did not start within 180 s"; exit 1; }
+    sleep 1
+  done
 fi
 
 swiftc -O -swift-version 5 Sources/Recorder.swift Sources/Streamer.swift Sources/Transcriber.swift Sources/Paster.swift Tests/main.swift -o "$work/streamtest"

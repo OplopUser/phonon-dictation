@@ -4,8 +4,10 @@ set -euo pipefail
 cd "${0:a:h}"
 
 APP="build/Phonon Dictation.app"
-PHONON="$PWD/.venv/bin/phonon"
-[[ -x "$PHONON" ]] || { echo "Phonon is not installed in .venv; see README.md"; exit 1; }
+# The app runs Phonon from this path, so rebuild if you move the checkout,
+# or point PHONON at an install elsewhere: PHONON=/path/to/phonon ./build.sh
+PHONON="${PHONON:-$PWD/.venv/bin/phonon}"
+[[ -x "$PHONON" ]] || { echo "Phonon not found at $PHONON; install it in .venv (see README.md) or set PHONON"; exit 1; }
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
